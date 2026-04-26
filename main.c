@@ -17,8 +17,7 @@ int main()
     al_init_image_addon();
     al_install_keyboard();
     al_set_new_display_flags(ALLEGRO_OPENGL);
-
-
+    
 
     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 30.0);
     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
