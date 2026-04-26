@@ -1,0 +1,12 @@
+*.exe
+*.o
+*.out
+
+cmake-build-debug/
+cmake-build-release/
+.vs/
+bin/
+obj/
+
+.DS_Store
+Thumbs.db
