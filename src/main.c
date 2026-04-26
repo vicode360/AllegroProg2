@@ -3,7 +3,6 @@
 #include <allegro5/allegro_image.h>
 #include <allegro5/keyboard.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include "mapa.h"
 #include "player.h"
 

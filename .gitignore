@@ -1,10 +1,12 @@
 *.exe
 *.o
 *.out
+*.pdb
 
 cmake-build-debug/
 cmake-build-release/
 .vs/
+.idea/
 bin/
 obj/
 
