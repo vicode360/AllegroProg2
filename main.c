@@ -10,7 +10,6 @@
 // largura - 160
 // altura - 152
 
-
 int main()
 {
     al_init();
