@@ -15,7 +15,9 @@ add_executable(Prog2Trabalho src/main.c
         src/player.h
         src/mapa.c
         src/mapa.h
-        src/main.c)
+        src/main.c
+        src/jogo.h
+        src/jogo.c)
 
 target_include_directories(Prog2Trabalho PRIVATE ${ALLEGRO_INCLUDE_DIRS})
 target_link_libraries(Prog2Trabalho PRIVATE ${ALLEGRO_LIBRARIES})
