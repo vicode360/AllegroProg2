@@ -8,8 +8,7 @@
 
 // largura - 160
 // altura - 152
-// testesss
-
+no teste
 int main()
 {
     al_init();
