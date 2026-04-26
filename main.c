@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "mapa.h"
+#include "player.h"
 
 // largura - 160
 // altura - 152
@@ -15,8 +16,9 @@ int main()
     al_init();
     al_init_image_addon();
     al_install_keyboard();
-
     al_set_new_display_flags(ALLEGRO_OPENGL);
+
+
 
     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 30.0);
     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
@@ -27,19 +29,8 @@ int main()
     ALLEGRO_DISPLAY* disp = al_create_display(largura_tela, altura_tela);
     al_set_window_title(disp, (":D"));
     ALLEGRO_FONT* font = al_create_builtin_font();
-    ALLEGRO_BITMAP* boneco[4];
-    boneco[0] = al_load_bitmap("assets/img/run_down.png"); // 96 largura
-    boneco[1] = al_load_bitmap("assets/img/run_up.png");   // 80 altura
-    boneco[2] = al_load_bitmap("assets/img/run_left.png");
-    boneco[3] = al_load_bitmap("assets/img/run_right.png");
-
     ALLEGRO_BITMAP *casa = al_load_bitmap("assets/img/casa.png");
     ALLEGRO_BITMAP *tileset = al_load_bitmap("assets/img/TX Tileset Grass.png");
-    ALLEGRO_BITMAP* sprite = al_load_bitmap("assets/img/nekos.png");
-    if (!sprite) {
-        fprintf(stderr, "n foi possivel carregar o arquivo, verifique se ele esta na pasta cmake-build-debug\n");
-        return -1;
-    }
 
 
     al_register_event_source(queue, al_get_keyboard_event_source());
@@ -47,11 +38,23 @@ int main()
     al_register_event_source(queue, al_get_timer_event_source(timer));
 
     float frame = 0.f;
-    int pos_x = 0, pos_y = 0;
-    int current_frame_y = 152;
-    int direcao = 0;
-    int offset_gato_x = 60;
-    int offset_gato_y = 85;
+
+    // inicializando os personagens
+
+    Personagem gato;
+    Personagem player;
+
+    inicializar_player_sheet(&gato, 100, 100, "assets/img/nekos.png");
+    gato.largura_frame =  160;
+    gato.altura_frame =  152;
+
+    const char* imagens_p[4] = {"assets/img/run_down.png", "assets/img/run_up.png", "assets/img/run_left.png", "assets/img/run_right.png"};
+
+    inicializar_player_sprites(&player, 200, 200, imagens_p);
+    player.largura_frame = 96;
+    player.altura_frame = 80;
+
+
 
     bool redraw = true;
     ALLEGRO_EVENT event;
@@ -61,49 +64,53 @@ int main()
     {
         al_wait_for_event(queue, &event);
 
-        if(event.type == ALLEGRO_EVENT_TIMER)
+        if(event.type == ALLEGRO_EVENT_TIMER) {
             redraw = true;
-        frame += 0.2;
-        if (frame > 4) {
-            frame -= 4;
+            frame += 0.2;
+            if (frame > 4) frame -= 4;
+            player.frame_atual = (int)frame;
+            gato.frame_atual = (int)frame;
         }
+
         else if((event.type == ALLEGRO_EVENT_DISPLAY_CLOSE))
             break;
         else if(event.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
-            direcao = 3;
-            current_frame_y = 160;
-            pos_x += 6;
+            player.direcao = 3;
+            gato.direcao = 1;
+            player.x += 6;
         }
         else if(event.keyboard.keycode == ALLEGRO_KEY_LEFT) {
-            direcao = 2;
-            current_frame_y = 160*3;
-            pos_x -= 6;
+            player.direcao = 2;
+            gato.direcao = 3;
+            player.x -= 6;
         }
         else if(event.keyboard.keycode == ALLEGRO_KEY_UP) {
-            direcao = 1;
-            current_frame_y = 160*2;
-            pos_y -= 6;
+            player.direcao = 1;
+            gato.direcao = 2;
+            player.y -= 6;
         }
         else if(event.keyboard.keycode == ALLEGRO_KEY_DOWN) {
-            direcao = 0;
-            current_frame_y = 0;
-            pos_y += 6;
+            player.direcao = 0;
+            gato.direcao = 0;
+            player.y += 6;
         }
 
         if(redraw && al_is_event_queue_empty(queue))
         {
+            gato.x = player.x + 60;
+            gato.y = player.y + 85;
+
             al_clear_to_color(al_map_rgb(0, 0, 0));
             desenhar_mapa(tileset);
             al_rest(0.01);
             al_draw_tinted_scaled_rotated_bitmap_region(casa, 0, 0, 80, 97, al_map_rgb(255, 255, 255), 1, 1, 250, 80, 2, 2, 0, 0);
-            al_draw_tinted_scaled_rotated_bitmap_region(boneco[direcao], 96*(int)frame, -10, 96, 80, al_map_rgb(255, 255, 255), 1, 1, pos_x, pos_y, 1.25, 1.25, 0, 0);
-            al_draw_tinted_scaled_rotated_bitmap_region(sprite, 160*(int)frame, current_frame_y, 160, 145, al_map_rgb(255, 255, 255), 1, 1, pos_x + offset_gato_x, pos_y + offset_gato_y, 0.2, 0.2, 0, 0);
+            desenhar_personagem(player);
+            desenhar_personagem(gato);
             al_flip_display();
             redraw = false;
         }
     }
-    al_destroy_bitmap(tileset);
-    al_destroy_bitmap(sprite);
+    al_destroy_bitmap(tileset);;
     al_destroy_font(font);
     al_destroy_display(disp);
     al_destroy_timer(timer);
