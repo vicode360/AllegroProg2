@@ -10,7 +10,8 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(ALLEGRO REQUIRED allegro-5 allegro_main-5 allegro_font-5 allegro_image-5 allegro_primitives-5)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-add_executable(Prog2Trabalho src/main.c
+add_executable(Prog2Trabalho
+        src/main.c
         src/player.c
         src/player.h
         src/mapa.c

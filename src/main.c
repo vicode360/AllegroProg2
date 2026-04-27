@@ -1,7 +1,8 @@
+#include <stdio.h>
+
 #include "jogo.h"
 
-int main()
-{
+int main(){
     iniciar_jogo();
     return 0;
 }

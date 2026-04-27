@@ -1,16 +1,31 @@
 #include "mapa.h"
 
+#include <stdio.h>
+#include <string.h>
 
-int mapa[LINHAS_MAPA][COLUNAS_MAPA] = {
-        {3, 4, 7, 8, 3, 7, 3, 8},
-        {11, 11, 12, 11, 12, 11, 12, 11},
-        {1, 2, 5, 14, 6, 1, 5, 2},
-        {5, 6, 1, 10, 5, 1, 2, 6},
-        {5, 6, 1, 14, 12, 16, 2, 6},
-        {1, 2, 5, 8, 6, 1, 5, 2},
-        {3, 2, 4, 8, 6, 2, 6, 2},
-        {3, 4, 7, 8, 3, 7, 3, 8},
-    };
+char mapa_atual[] = "mapa02.txt";
+int mapa[LINHAS_MAPA][COLUNAS_MAPA];
+
+/*
+if (mudou_de_tela) {
+    strcpy (mapa_atual, "mapa02.txt");
+}
+*/
+
+void carregar_mapa() {
+    FILE *arquivo = fopen(mapa_atual, "r");
+    if (arquivo == NULL) {
+        printf("erro na leitura do arquivo\n");
+        return;
+    }
+
+    for (int i = 0; i < LINHAS_MAPA; i++) {
+        for (int j = 0; j < COLUNAS_MAPA; j++) {
+            fscanf(arquivo, "%d", &mapa[i][j]);
+        }
+    }
+    fclose(arquivo);
+}
 
 void desenhar_mapa(ALLEGRO_BITMAP* tileset) {
     for (int i = 0; i < LINHAS_MAPA; i++) {
