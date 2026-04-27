@@ -67,7 +67,7 @@ void iniciar_jogo() {
             gato.frame_atual = (int)frame;
         }
 
-        else if((event.type == ALLEGRO_EVENT_DISPLAY_CLOSE))
+        else if(event.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             break;
         else if(event.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
             player.direcao = 3;
