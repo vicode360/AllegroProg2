@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char mapa_atual[] = "mapa02.txt";
+char mapa_atual[] = "assets/mapas/mapa02.txt";
 int mapa[LINHAS_MAPA][COLUNAS_MAPA];
 
 /*
