@@ -96,6 +96,7 @@ void iniciar_jogo() {
             gato.y = player.y + 85;
 
             al_clear_to_color(al_map_rgb(0, 0, 0));
+            carregar_mapa();
             desenhar_mapa(tileset);
             al_rest(0.01);
             al_draw_tinted_scaled_rotated_bitmap_region(casa, 0, 0, 80, 97, al_map_rgb(255, 255, 255), 1, 1, 250, 80, 2, 2, 0, 0);
