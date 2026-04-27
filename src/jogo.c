@@ -7,7 +7,6 @@
 #include "player.h"
 
 void iniciar_jogo() {
-
     al_init();
     al_init_image_addon();
     al_install_keyboard();
@@ -47,55 +46,71 @@ void iniciar_jogo() {
     inicializar_player_sprites(&player, 200, 200, imagens_p);
     player.largura_frame = 96;
     player.altura_frame = 80;
-
-
+    int em_movimento = 0;
+    carregar_mapa();
 
     bool redraw = true;
     ALLEGRO_EVENT event;
 
     al_start_timer(timer);
-    while(1)
-    {
+    while(1) {
         al_wait_for_event(queue, &event);
-
-        if(event.type == ALLEGRO_EVENT_TIMER) {
-            redraw = true;
-            frame += 0.2;
-            if (frame > 4) frame -= 4;
-            player.frame_atual = (int)frame;
-            gato.frame_atual = (int)frame;
-        }
-
-        else if(event.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+        if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
             break;
-        else if(event.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
-            player.direcao = 3;
-            gato.direcao = 1;
-            player.x += 6;
         }
-        else if(event.keyboard.keycode == ALLEGRO_KEY_LEFT) {
-            player.direcao = 2;
-            gato.direcao = 3;
-            player.x -= 6;
+        if (event.type == ALLEGRO_EVENT_KEY_DOWN) {
+            em_movimento = 1;
+            switch (event.keyboard.keycode) {
+                case ALLEGRO_KEY_UP: player.direcao = 1; break;
+                case ALLEGRO_KEY_DOWN: player.direcao = 0; break;
+                case ALLEGRO_KEY_LEFT: player.direcao = 2; break;
+                case ALLEGRO_KEY_RIGHT: player.direcao = 3; break;
+            }
         }
-        else if(event.keyboard.keycode == ALLEGRO_KEY_UP) {
-            player.direcao = 1;
-            gato.direcao = 2;
-            player.y -= 6;
-        }
-        else if(event.keyboard.keycode == ALLEGRO_KEY_DOWN) {
-            player.direcao = 0;
-            gato.direcao = 0;
-            player.y += 6;
-        }
+            else if (event.type == ALLEGRO_EVENT_KEY_UP) {
+                em_movimento = 0;
+            }
+            else if(event.type == ALLEGRO_EVENT_TIMER) {
+                redraw = true;
 
+
+                if (em_movimento == 1) {
+
+
+                    frame += 0.4;
+                    if (frame > 4) frame -= 4;
+                    player.frame_atual = (int)frame;
+                    gato.frame_atual = (int)frame;
+
+
+                    if (player.direcao == 0) {
+                        player.y += 6;
+                        gato.direcao = 0;
+                    } else if (player.direcao == 1) {
+                        player.y -= 6;
+                        gato.direcao = 2;
+                    } else if (player.direcao == 2) {
+                        player.x -= 6;
+                        gato.direcao = 3;
+                    } else if (player.direcao == 3) {
+                        player.x += 6;
+                        gato.direcao = 1;
+                    }
+
+                }
+
+                else {
+
+                    player.frame_atual = 0;
+                    gato.frame_atual = 0;
+                }
+            }
         if(redraw && al_is_event_queue_empty(queue))
         {
             gato.x = player.x + 60;
             gato.y = player.y + 85;
 
             al_clear_to_color(al_map_rgb(0, 0, 0));
-            carregar_mapa();
             desenhar_mapa(tileset);
             al_rest(0.01);
             al_draw_tinted_scaled_rotated_bitmap_region(casa, 0, 0, 80, 97, al_map_rgb(255, 255, 255), 1, 1, 250, 80, 2, 2, 0, 0);
