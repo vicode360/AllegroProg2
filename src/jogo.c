@@ -8,7 +8,6 @@
 
 void iniciar_jogo() {
 
-
     al_init();
     al_init_image_addon();
     al_install_keyboard();
