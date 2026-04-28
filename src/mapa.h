@@ -9,7 +9,7 @@
 #define COLUNAS_MAPA 8
 #define COLS_TILESET 4
 
-void carregar_mapa();
+void carregar_mapa(const char* caminho_mapa);
 void desenhar_mapa(ALLEGRO_BITMAP* tileset);
 
 #endif //PROG2TRABALHO_MAPA_H

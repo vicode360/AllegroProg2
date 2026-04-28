@@ -47,7 +47,7 @@ void iniciar_jogo() {
     player.largura_frame = 96;
     player.altura_frame = 80;
     int em_movimento = 0;
-    carregar_mapa();
+    carregar_mapa("assets/mapas/mapa01.txt");
 
     bool redraw = true;
     ALLEGRO_EVENT event;
@@ -96,13 +96,18 @@ void iniciar_jogo() {
                         player.x += 6;
                         gato.direcao = 1;
                     }
-
                 }
-
                 else {
-
                     player.frame_atual = 0;
                     gato.frame_atual = 0;
+                }
+                if (player.x > largura_tela) {
+                    carregar_mapa("assets/mapas/mapa02.txt");
+                    player.x = -50;
+                }
+                else if (player.x < -50) {
+                    carregar_mapa("assets/mapas/mapa01.txt");
+                    player.x = largura_tela;
                 }
             }
         if(redraw && al_is_event_queue_empty(queue))

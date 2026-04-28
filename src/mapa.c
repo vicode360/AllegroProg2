@@ -3,17 +3,16 @@
 #include <stdio.h>
 #include <string.h>
 
-char mapa_atual[] = "assets/mapas/mapa02.txt";
+char* mapa_atual = "assets/mapas/mapa01.txt";
 int mapa[LINHAS_MAPA][COLUNAS_MAPA];
 
-/*
-if (mudou_de_tela) {
-    strcpy (mapa_atual, "mapa02.txt");
-}
-*/
 
-void carregar_mapa() {
-    FILE *arquivo = fopen(mapa_atual, "r");
+// if (mudou_de_mapa) {
+//     strcpy (mapa_atual, "assets/mapas/mapa02.txt");
+// }
+
+void carregar_mapa(const char* caminho_mapa) {
+    FILE *arquivo = fopen(caminho_mapa, "r");
     if (arquivo == NULL) {
         printf("erro na leitura do arquivo\n");
         return;
