@@ -31,8 +31,6 @@ void iniciar_jogo() {
     al_set_window_title(disp, (":D"));
     ALLEGRO_FONT* font = al_create_builtin_font();
     ALLEGRO_BITMAP *casa = al_load_bitmap("assets/img/casa.png");
-    ALLEGRO_BITMAP* casatopo = al_load_bitmap("assets/img/casatopo.png");
-    ALLEGRO_BITMAP* casafrente =  al_load_bitmap("assets/img/casafrente.png");
     ALLEGRO_BITMAP *tileset = al_load_bitmap("assets/img/TX Tileset Grass.png");
 
 
@@ -126,6 +124,7 @@ void iniciar_jogo() {
                 gato.frame_atual = 0;
             }
             bool colisao = false;
+
             // hitbox do player
             int off_px = 35;  // deslocamento horizontal ate o hitbox
             int off_py = 50;  // deslocamento vertical ate o hitbox
@@ -143,6 +142,14 @@ void iniciar_jogo() {
                 player.x = next_x;
                 player.y = next_y;
             }
+            if (player.x > 460) {
+                player.x = -50;
+            }
+            else if (player.x < -65) {
+                player.x = 440;
+            }
+            if (player.y > altura_tela) player.y = -50;
+            else if (player.y < -65) player.y = 440;
                 if(redraw && al_is_event_queue_empty(queue))
                 {
                     gato.x = player.x + 60;
