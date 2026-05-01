@@ -1,0 +1,10 @@
+CompileFlags:
+  Add:
+    - "-xc"
+    - "-std=c11"
+    - "-IC:/msys64/ucrt64/include"
+    - "-IC:/msys64/ucrt64/include/allegro5"
+    - "--target=x86_64-w64-mingw32"
+
+Index:
+  Background: Build
