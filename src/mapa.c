@@ -3,21 +3,54 @@
 #include <stdio.h>
 #include <string.h>
 
-char* mapa_atual = "assets/mapas/mapa01.txt";
-int mudou_de_mapa = 0;
+MapaNode* mapa_atual_node = NULL;
+MapaNode* cabeca_lista = NULL;
 int mapa[LINHAS_MAPA][COLUNAS_MAPA];
 
+// Função auxiliar de alocação do Nó
+MapaNode* criar_no_mapa(const char* arquivo, int id) {
+    MapaNode* novo = (MapaNode*)malloc(sizeof(MapaNode));
+    strcpy(novo->arquivo, arquivo);
+    novo->id = id;
+    novo->prox = NULL;
+    novo->ant = NULL;
+    return novo;
+}
 
-// if (mudou_de_mapa==1) {
-//     strcpy (mapa_atual, "assets/mapas/mapa02.txt");
-// }else if (mudou_de_mapa==0) {
-//     strcpy (mapa_atual, "assets/mapas/mapa01.txt");
-// }
+void inicializar_lista_mapas() {
+    // Instancia os 5 mapas do Overworld
+    MapaNode* m1 = criar_no_mapa("assets/mapas/mapa01.txt", 1);
+    MapaNode* m2 = criar_no_mapa("assets/mapas/mapa02.txt", 2);
+    MapaNode* m3 = criar_no_mapa("assets/mapas/mapa04.txt", 4);
+    MapaNode* m4 = criar_no_mapa("assets/mapas/mapa05.txt", 5);
+    MapaNode* m5 = criar_no_mapa("assets/mapas/mapa06.txt", 6);
 
-void carregar_mapa(const char* caminho_mapa) {
-    FILE *arquivo = fopen(caminho_mapa, "r");
+    // Conexão Duplamente Encadeada (Esquerda <-> Direita)
+    m1->prox = m2; m2->ant = m1;
+    m2->prox = m3; m3->ant = m2;
+    m3->prox = m4; m4->ant = m3;
+    m4->prox = m5; m5->ant = m4;
+
+    cabeca_lista = m1;
+    mapa_atual_node = cabeca_lista;
+    carregar_mapa_node(mapa_atual_node);
+}
+
+void destruir_lista_mapas() {
+    MapaNode* atual = cabeca_lista;
+    while(atual != NULL) {
+        MapaNode* prox = atual->prox;
+        free(atual);
+        atual = prox;
+    }
+}
+
+void carregar_mapa_node(MapaNode* no) {
+    if (!no) return;
+
+    FILE *arquivo = fopen(no->arquivo, "r");
     if (arquivo == NULL) {
-        printf("erro na leitura do arquivo\n");
+        printf("ERRO DE I/O: Nao foi possivel ler o arquivo %s\n", no->arquivo);
         return;
     }
 
@@ -28,7 +61,6 @@ void carregar_mapa(const char* caminho_mapa) {
     }
     fclose(arquivo);
 }
-
 void desenhar_mapa(ALLEGRO_BITMAP* tileset) {
     for (int i = 0; i < LINHAS_MAPA; i++) {
         for (int j = 0; j < COLUNAS_MAPA; j++) {

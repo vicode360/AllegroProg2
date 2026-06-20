@@ -24,6 +24,10 @@ add_executable(Prog2Trabalho
         src/jogo.c
         src/interior.c
         src/interior.h
+        src/colisao.h
+        src/colisao.c
+        src/inimigo.h
+        src/inimigo.c
 )
 if(APPLE)
     set(ENV{PKG_CONFIG_PATH} "/opt/homebrew/lib/pkgconfig")

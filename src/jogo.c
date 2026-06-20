@@ -1,31 +1,16 @@
 #include <allegro5/allegro.h>
-#include "jogo.h"
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_primitives.h>
+#include <stdio.h>
+#include "jogo.h"
 #include "mapa.h"
 #include "player.h"
 #include "interior.h"
+#include "colisao.h"
+#include "inimigo.h"
 
 int mapas = 1;
-
-bool checar_colisao(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2) {
-    if (x1 + w1 > x2 && x1 < x2 + w2 && y1 + h1 > y2 && y1 < y2 + h2) {
-        return true;
-    }
-    return false;
-}
-
-static void trocar_mapa_externo(Personagem *player, int largura_tela, int altura_tela) {
-    if (mapas == 1) {
-        carregar_mapa("assets/mapas/mapa02.txt");
-        mapas = 2;
-    } else {
-        carregar_mapa("assets/mapas/mapa01.txt");
-        mapas = 1;
-    }
-    (void)largura_tela, (void)altura_tela;
-}
 
 static void atualizar_movimento(Personagem *player, int *next_x, int *next_y, int em_movimento) {
     if (!em_movimento) return;
@@ -36,47 +21,43 @@ static void atualizar_movimento(Personagem *player, int *next_x, int *next_y, in
     else if (player->direcao == 3) *next_x += 6;
 }
 
-static bool resolver_colisoes(int next_x, int next_y, int direcao) {
-    const int off_px = 55, off_py = 50, hit_pw = 10, hit_ph = 20;
-
-    if (mapas == 1) {
-        if (checar_colisao(next_x + off_px, next_y + off_py, hit_pw, hit_ph, 243, 130, 75*2, 50*2))
-            return true;
-    }
-    if (mapas == 3) {
-        if (colisao_parede(next_x, next_y, direcao))
-            return true;
-        if (colisao_moveis(next_x, next_y, off_px, off_py, hit_pw, hit_ph))
-            return true;
-    }
-    return false;
-}
-
 static void verificar_bordas(Personagem *player, int largura_tela, int altura_tela) {
     if (mapas == 3) return;
 
-    bool saiu = false;
+    if (player->y > altura_tela - 60) player->y = altura_tela - 60;
+    if (player->y < -20) player->y = -20;
 
-    if      (player->x > largura_tela - 52) { player->x = -50; saiu = true; }
-    else if (player->x < -65)               { player->x = largura_tela - 72; saiu = true; }
-
-    if      (player->y > altura_tela)       { player->y = -50; saiu = true; }
-    else if (player->y < -65)               { player->y = altura_tela - 72; saiu = true; }
-
-    if (saiu) {
-        if (mapas == 1) {
-            carregar_mapa("assets/mapas/mapa02.txt");
-            mapas = 2;
+    if (player->x > largura_tela - 52) {
+        if (mapa_atual_node->prox != NULL) {
+            mapa_atual_node = mapa_atual_node->prox;
+            mapas = mapa_atual_node->id;
+            carregar_mapa_node(mapa_atual_node);
+            player->x = -40;
         } else {
-            carregar_mapa("assets/mapas/mapa01.txt");
-            mapas = 1;
+            player->x = largura_tela - 52;
+        }
+    }
+    else if (player->x < -50) {
+        if (mapa_atual_node->ant != NULL) {
+            mapa_atual_node = mapa_atual_node->ant;
+            mapas = mapa_atual_node->id;
+            carregar_mapa_node(mapa_atual_node);
+            player->x = largura_tela - 60;
+        } else {
+            player->x = -50;
         }
     }
 }
 
 static void entrar_casa(Personagem *player) {
     if (mapas == 1 && player->x > 250 && player->x < 285 && player->y > 0 && player->y < 200) {
-        carregar_mapa("assets/mapas/mapa03.txt");
+        FILE *arquivo = fopen("assets/mapas/mapa03.txt", "r");
+        if(arquivo) {
+            for(int i=0; i<8; i++)
+                for(int j=0; j<8; j++)
+                    fscanf(arquivo, "%d", &mapa[i][j]);
+            fclose(arquivo);
+        }
         mapas = 3;
         player->x = 200;
         player->y = 300;
@@ -111,26 +92,26 @@ void iniciar_jogo() {
     slash[4] = al_load_bitmap("assets/img/File5.png");
     slash[5] = al_load_bitmap("assets/img/File6.png");
 
-    for (int i = 0; i < 6; i++) {
-        if (!slash[i]) {
-            printf("ERRO FATAL: Nao foi possivel carregar o frame do slash %d!\n", i);
-            exit(1);
-        }
+    // Instanciação dos Múltiplos Spritesheets do Golem
+    ALLEGRO_BITMAP *golem_idle = al_load_bitmap("assets/img/Golem_1_idle.png");
+    ALLEGRO_BITMAP *golem_walk = al_load_bitmap("assets/img/Golem_1_walk.png");
+    ALLEGRO_BITMAP *golem_hurt = al_load_bitmap("assets/img/Golem_1_hurt.png");
+    ALLEGRO_BITMAP *golem_die  = al_load_bitmap("assets/img/Golem_1_die.png");
+    ALLEGRO_BITMAP *golem_attack = al_load_bitmap("assets/img/Golem_1_attack.png");
+
+    if (!golem_idle || !golem_walk || !golem_hurt || !golem_die) {
+        printf("ERRO FATAL: Nao foi possivel carregar as texturas Golem_1_*.png\n");
+        exit(1);
     }
 
     inicializar_interior();
+    inicializar_lista_mapas();
 
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(disp));
     al_register_event_source(queue, al_get_timer_event_source(timer));
 
-    Personagem gato;
     Personagem player;
-
-    inicializar_player_sheet(&gato, 100, 100, "assets/img/nekos.png");
-    gato.largura_frame = 160;
-    gato.altura_frame = 152;
-
     const char* imagens_p[4] = {
         "assets/img/run_down.png",
         "assets/img/run_up.png",
@@ -141,7 +122,9 @@ void iniciar_jogo() {
     player.largura_frame = 96;
     player.altura_frame = 80;
 
-    carregar_mapa("assets/mapas/mapa01.txt");
+    // Inicialização Limpa do array de Inimigos
+    Inimigo inimigos[NUM_INIMIGOS];
+    inicializar_inimigos(inimigos, NUM_INIMIGOS);
 
     float frame = 0.f;
     int em_movimento = 0;
@@ -160,12 +143,6 @@ void iniciar_jogo() {
 
         if (event.type == ALLEGRO_EVENT_KEY_DOWN) {
             switch (event.keyboard.keycode) {
-                case ALLEGRO_KEY_M:
-                    trocar_mapa_externo(&player, largura_tela, altura_tela);
-                    player.x = largura_tela / 2;
-                    player.y = altura_tela / 2;
-                    break;
-
                 case ALLEGRO_KEY_F:
                     if (!player.atacando) {
                         player.atacando = true;
@@ -200,56 +177,72 @@ void iniciar_jogo() {
                 frame += 0.4;
                 if (frame > 4) frame -= 4;
                 player.frame_atual = (int)frame;
-                gato.frame_atual = (int)frame;
-
                 atualizar_movimento(&player, &next_x, &next_y, em_movimento);
-                gato.direcao = (int[]){0, 2, 3, 1}[player.direcao];
             } else {
                 player.frame_atual = 0;
-                gato.frame_atual = 0;
             }
 
-            if (!resolver_colisoes(next_x, next_y, player.direcao)) {
+            // Engine de Colisão Central
+            if (!resolver_colisoes(next_x, next_y, player.direcao, mapas)) {
                 player.x = next_x;
                 player.y = next_y;
             }
+
             verificar_bordas(&player, largura_tela, altura_tela);
             entrar_casa(&player);
 
+            // Resolução Física de AI Golem
+            if (mapas == 1) {
+                atualizar_inimigos(inimigos, NUM_INIMIGOS, &player);
+            }
+
+            // Gatilho Condicional de Dano DpS (Damage per Second bypass)
             if (player.atacando) {
                 player.timer_ataque--;
                 if (player.timer_ataque == 14) {
                     int hit_x = player.x + 55;
                     int hit_y = player.y + 50;
-                    int hit_w = 40;
-                    int hit_h = 40;
-
                     if (player.direcao == 0) hit_y += 30;
                     else if (player.direcao == 1) hit_y -= 30;
                     else if (player.direcao == 2) hit_x -= 30;
                     else if (player.direcao == 3) hit_x += 30;
 
-                    if (checar_colisao(hit_x, hit_y, hit_w, hit_h, gato.x + 60, gato.y + 65, 30, 30)) {
-                        printf("acertou o alvo\n");
+                    if (mapas == 1) {
+                        for (int i = 0; i < NUM_INIMIGOS; i++) {
+                            if (inimigos[i].ativo) {
+                                // Hitbox adaptada (Hitbox da arma 40x40 vs Corpo do Golem 90x64)
+                                if (checar_colisao(hit_x, hit_y, 40, 40, inimigos[i].x, inimigos[i].y, 90, 64)) {
+                                    if (inimigos[i].estado != ESTADO_DIE) { // Nao ataca corpos mortos
+                                        inimigos[i].hp -= 15;
+                                        if (inimigos[i].hp <= 0) {
+                                            inimigos[i].estado = ESTADO_DIE;
+                                            inimigos[i].frame_atual = 0.0f;
+                                        } else {
+                                            if (inimigos[i].estado != ESTADO_HURT) {
+                                                inimigos[i].estado = ESTADO_HURT;
+                                                inimigos[i].frame_atual = 0.0f;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                if (player.timer_ataque <= 0) {
-                    player.atacando = false;
-                }
+                if (player.timer_ataque <= 0) player.atacando = false;
             }
 
+            // Main Pipeline
             if(redraw && al_is_event_queue_empty(queue)) {
-                gato.x = player.x + 60;
-                gato.y = player.y + 65;
-
                 al_clear_to_color(al_map_rgb(0, 0, 0));
                 desenhar_mapa(tileset);
                 al_rest(0.01);
 
                 if (mapas == 3) {
                     if (player.x > 170 && player.x < 210 && player.y > 300) {
-                        carregar_mapa("assets/mapas/mapa01.txt");
-                        mapas = 1;
+                        mapa_atual_node = cabeca_lista;
+                        mapas = mapa_atual_node->id;
+                        carregar_mapa_node(mapa_atual_node);
                         player.x = 268;
                         player.y = 220;
                     }
@@ -260,8 +253,12 @@ void iniciar_jogo() {
                     al_draw_tinted_scaled_rotated_bitmap_region(casa, 0, 63, 80, 34, al_map_rgb(255, 255, 255), 1, 1, 250, 206, 2, 2, 0, 0);
                 }
 
+                if (mapas == 1) {
+                    // Passagem dos múltiplos arquivos de texturas via ponteiros
+                    desenhar_inimigos(inimigos, NUM_INIMIGOS, golem_idle, golem_walk, golem_hurt, golem_die, golem_attack);
+                }
+
                 desenhar_personagem(player);
-                desenhar_personagem(gato);
 
                 if (player.atacando) {
                     int frame_slash = 5 - (player.timer_ataque * 6 / 16);
@@ -298,7 +295,6 @@ void iniciar_jogo() {
 
                     int slash_w = al_get_bitmap_width(slash[frame_slash]);
                     int slash_h = al_get_bitmap_height(slash[frame_slash]);
-
                     float draw_x = player.x + 55 + offset_x;
                     float draw_y = player.y + 50 + offset_y;
 
@@ -324,14 +320,20 @@ void iniciar_jogo() {
         }
     }
 
+    // Processo de Desalocação
     for(int i = 0; i < 6; i++) {
         if(slash[i]) al_destroy_bitmap(slash[i]);
     }
 
-    destruir_interior();
-    destruir_personagem(&gato);
-    destruir_personagem(&player);
+    al_destroy_bitmap(golem_idle);
+    al_destroy_bitmap(golem_walk);
+    al_destroy_bitmap(golem_hurt);
+    al_destroy_bitmap(golem_die);
+    al_destroy_bitmap(golem_attack);
 
+    destruir_lista_mapas();
+    destruir_interior();
+    destruir_personagem(&player);
     al_destroy_bitmap(casa);
     al_destroy_bitmap(tileset);
     al_destroy_font(font);
