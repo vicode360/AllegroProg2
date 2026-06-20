@@ -13,6 +13,11 @@ typedef struct {
     bool usa_sprite_unico;
     ALLEGRO_BITMAP* sprites[4]; // caso "usa_sprite_unico" for falso (varias imagens)
     ALLEGRO_BITMAP* sprite; // caso "usa_sprite_unico" for verdadeiro (uma so imagem)
+
+    //ataque
+    bool atacando;
+    int timer_ataque;
+
 } Personagem;
 
 

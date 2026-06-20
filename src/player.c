@@ -12,6 +12,9 @@ void inicializar_player_sheet(Personagem *p, float x_inicial, float y_inicial, c
 
     p->usa_sprite_unico = true;
     p->sprite = al_load_bitmap(caminho_imagem);
+
+    p->atacando = false;
+    p->timer_ataque = 0;
 }
 
 void inicializar_player_sprites(Personagem *p, float x_inicial, float y_inicial, const char* caminhos[4]) {
@@ -39,6 +42,11 @@ void desenhar_personagem(Personagem p) {
         al_draw_tinted_scaled_rotated_bitmap_region(p.sprite, corte_x, corte_y, p.largura_frame, p.altura_frame, al_map_rgb(255, 255, 255), 1, 1, p.x, p.y, 0.2, 0.2, 0, 0);
     }else {
         al_draw_tinted_scaled_rotated_bitmap_region(p.sprites[p.direcao], corte_x, 0, p.largura_frame, p.altura_frame, al_map_rgb(255, 255, 255), 1, 1, p.x, p.y, 1.25, 1.25, 0, 0);
+    }
+    if (p.atacando) {
+        al_draw_tinted_scaled_rotated_bitmap_region;
+    }else {
+        int corte_x = p.frame_atual * p.largura_frame;
     }
 }
 
