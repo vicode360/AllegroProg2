@@ -5,6 +5,6 @@
 #include "inimigo.h"
 #include "pokeapi.h"
 
-void combate_aplicar_slash(Personagem *player, const PowerUp *pu, Inimigo inimigos[], int num);
+int combate_aplicar_slash(Personagem *player, const PowerUp *pu, Inimigo inimigos[], int num);
 
 #endif

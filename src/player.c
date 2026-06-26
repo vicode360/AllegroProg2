@@ -10,6 +10,7 @@ void inicializar_player_sprites(Personagem *p, float x, float y, const char *cam
     p->frame_atual = 0;
     p->atacando = false;
     p->timer_ataque = 0;
+    p->slash_aplicado = false;
     for (int i = 0; i < 4; i++)
         p->sprites[i] = al_load_bitmap(caminhos[i]);
 }

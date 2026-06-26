@@ -21,14 +21,14 @@ static MapaNode *criar_no(const char *arquivo, int id) {
 void inicializar_lista_mapas(void) {
     MapaNode *m1 = criar_no("assets/mapas/mapa01.txt", 1);
     MapaNode *m2 = criar_no("assets/mapas/mapa02.txt", 2);
-    MapaNode *m3 = criar_no("assets/mapas/mapa04.txt", 4);
-    MapaNode *m4 = criar_no("assets/mapas/mapa05.txt", 5);
-    MapaNode *m5 = criar_no("assets/mapas/mapa06.txt", 6);
+    MapaNode *m4 = criar_no("assets/mapas/mapa04.txt", 4);
+    MapaNode *m5 = criar_no("assets/mapas/mapa05.txt", 5);
+    MapaNode *m6 = criar_no("assets/mapas/mapa06.txt", 6);
 
     m1->prox = m2; m2->ant = m1;
-    m2->prox = m3; m3->ant = m2;
-    m3->prox = m4; m4->ant = m3;
+    m2->prox = m4; m4->ant = m2;
     m4->prox = m5; m5->ant = m4;
+    m5->prox = m6; m6->ant = m5;
 
     cabeca_lista = mapa_atual_node = m1;
     mapa_id = 1;

@@ -17,6 +17,8 @@ typedef struct {
     float velocidade, frame_atual;
     int direcao;
     EstadoInimigo estado;
+    bool congelado;
+    int timer_congelado;
 } Inimigo;
 
 extern int kills_no_level;

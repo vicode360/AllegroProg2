@@ -1,13 +1,17 @@
+PKGS = allegro-5 allegro_main-5 allegro_font-5 allegro_image-5 allegro_primitives-5 libcurl libcjson
 CC = gcc
-CFLAGS = $(shell pkg-config --cflags allegro-5 allegro_main-5 allegro_font-5 allegro_image-5 allegro_primitives-5)
-LIBS   = $(shell pkg-config --libs   allegro-5 allegro_main-5 allegro_font-5 allegro_image-5 allegro_primitives-5)
+CFLAGS = $(shell pkg-config --cflags $(PKGS))
+LIBS   = $(shell pkg-config --libs   $(PKGS))
 
-SRCS = src/main.c src/jogo.c src/mapa.c src/player.c src/interior.c
+SRCS = $(wildcard src/*.c)
 OUT  = jogo
 
-all:
+all: $(OUT)
+$(OUT): $(SRCS)
 	$(CC) $(SRCS) $(CFLAGS) $(LIBS) -o $(OUT)
-	cp -r assets $(dir $(OUT))
+	-cp -r assets ./ 2>/dev/null
 
 clean:
 	rm -f $(OUT)
+
+.PHONY: all clean

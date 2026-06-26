@@ -36,6 +36,7 @@ static int extrair_stat(cJSON *stats, const char *nome) {
 bool buscar_pokemon(int id, PokemonData *out) {
     if (!out) return false;
     memset(out, 0, sizeof(*out));
+    out->id = id;
 
     char url[128];
     snprintf(url, sizeof(url), "https://pokeapi.co/api/v2/pokemon/%d", id);
@@ -86,27 +87,142 @@ bool buscar_pokemon(int id, PokemonData *out) {
     return true;
 }
 
+bool buscar_descricao(int id, char *out, int max_len) {
+    if (!out || max_len <= 0) return false;
+    out[0] = '\0';
+
+    char url[160];
+    snprintf(url, sizeof(url), "https://pokeapi.co/api/v2/pokemon-species/%d", id);
+
+    CURL *curl = curl_easy_init();
+    if (!curl) return false;
+
+    ResponseBuffer resp = {malloc(1), 0};
+    if (!resp.data) { curl_easy_cleanup(curl); return false; }
+    resp.data[0] = '\0';
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+    bool ok = curl_easy_perform(curl) == CURLE_OK;
+    curl_easy_cleanup(curl);
+    if (!ok) { free(resp.data); return false; }
+
+    cJSON *json = cJSON_Parse(resp.data);
+    free(resp.data);
+    if (!json) return false;
+
+    cJSON *entries = cJSON_GetObjectItem(json, "flavor_text_entries");
+    bool achou = false;
+    if (cJSON_IsArray(entries)) {
+        cJSON *obj;
+        cJSON_ArrayForEach(obj, entries) {
+            cJSON *lang = cJSON_GetObjectItem(obj, "language");
+            cJSON *lname = lang ? cJSON_GetObjectItem(lang, "name") : NULL;
+            if (lname && cJSON_IsString(lname) && strcmp(lname->valuestring, "en") == 0) {
+                cJSON *ft = cJSON_GetObjectItem(obj, "flavor_text");
+                if (ft && cJSON_IsString(ft)) {
+                    strncpy(out, ft->valuestring, max_len - 1);
+                    out[max_len - 1] = '\0';
+                    for (char *p = out; *p; p++) {
+                        if (*p == '\n' || *p == '\f' || *p == '\r') *p = ' ';
+                    }
+                    achou = true;
+                    break;
+                }
+            }
+        }
+    }
+    cJSON_Delete(json);
+    return achou;
+}
+
 PowerUp calcular_powerup(PokemonData *p) {
-    PowerUp pu = {false, false, false, false};
+    PowerUp pu;
+    pu.habilidade = HAB_NENHUMA;
+    pu.tipo[0] = '\0';
     if (!p) return pu;
-    if (p->attack >= 100) pu.dano_dobro = true;
-    if (p->speed >= 90) pu.velocidade_extra = true;
-    if (p->hp >= 80) pu.escudo = true;
-    if (p->defense >= 80) pu.slash_maior = true;
+    strncpy(pu.tipo, p->type, sizeof(pu.tipo) - 1);
+
+    static const struct { const char *tipo; Habilidade hab; } mapa[] = {
+        {"fire",      HAB_AREA},
+        {"fighting",  HAB_AREA},
+        {"bug",       HAB_AREA},
+        {"water",     HAB_CONGELAR},
+        {"ice",       HAB_CONGELAR},
+        {"poison",    HAB_CONGELAR},
+        {"electric",  HAB_VELOCIDADE},
+        {"grass",     HAB_REGEN_ESCUDO},
+        {"fairy",     HAB_REGEN_ESCUDO},
+        {"rock",      HAB_ALCANCE},
+        {"ground",    HAB_ALCANCE},
+        {"steel",     HAB_ALCANCE},
+        {"psychic",   HAB_DANO_DOBRO},
+        {"dragon",    HAB_DANO_DOBRO},
+        {"ghost",     HAB_DANO_DOBRO},
+        {"dark",      HAB_DANO_DOBRO},
+        {"flying",    HAB_KNOCKBACK},
+        {"normal",    HAB_KNOCKBACK},
+    };
+    for (int i = 0; i < (int)(sizeof(mapa) / sizeof(mapa[0])); i++) {
+        if (strcmp(p->type, mapa[i].tipo) == 0) { pu.habilidade = mapa[i].hab; break; }
+    }
     return pu;
+}
+
+const char *habilidade_nome(Habilidade h) {
+    switch (h) {
+        case HAB_AREA:        return "Area";
+        case HAB_CONGELAR:    return "Congelar";
+        case HAB_VELOCIDADE:  return "Velocidade+";
+        case HAB_REGEN_ESCUDO:return "Regen Escudo";
+        case HAB_ALCANCE:     return "Alcance+";
+        case HAB_DANO_DOBRO:  return "Dano Dobro";
+        case HAB_KNOCKBACK:   return "Knockback";
+        default:              return "Nenhuma";
+    }
 }
 
 void powerup_para_hud(PokemonData *p, PowerUp *pu, char *buf, int len) {
     if (!p || !pu || !buf) return;
-    char buffs[64] = "";
-    if (pu->dano_dobro) strcat(buffs, "ATK+ ");
-    if (pu->velocidade_extra) strcat(buffs, "SPD+ ");
-    if (pu->escudo) strcat(buffs, "SHIELD ");
-    if (pu->slash_maior) strcat(buffs, "RANGE+ ");
-    if (buffs[0]) {
-        buffs[strlen(buffs) - 1] = '\0';
-        snprintf(buf, len, "[%s] %s", p->name, buffs);
-    } else {
+    if (pu->habilidade == HAB_NENHUMA) {
         snprintf(buf, len, "[%s]", p->name);
+    } else {
+        snprintf(buf, len, "[%s] %s", p->name, habilidade_nome(pu->habilidade));
     }
+}
+
+static size_t write_file_callback(void *contents, size_t size, size_t nmemb, void *userp) {
+    FILE *f = userp;
+    return fwrite(contents, size, nmemb, f);
+}
+
+bool baixar_sprite(int id, const char *arquivo) {
+    if (id <= 0 || !arquivo) return false;
+
+    char url[160];
+    snprintf(url, sizeof(url),
+             "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/%d.png", id);
+
+    CURL *curl = curl_easy_init();
+    if (!curl) return false;
+
+    FILE *f = fopen(arquivo, "wb");
+    if (!f) { curl_easy_cleanup(curl); return false; }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_file_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, f);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    fclose(f);
+
+    if (res != CURLE_OK) { remove(arquivo); return false; }
+    return true;
 }

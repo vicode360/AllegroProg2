@@ -17,7 +17,8 @@
 
 static void atualizar_movimento(Personagem *p, int *nx, int *ny, int movendo) {
     if (!movendo) return;
-    int vel = nivel_powerup()->velocidade_extra ? 9 : 6;
+    const PowerUp *pu = nivel_powerup();
+    int vel = (pu && pu->habilidade == HAB_VELOCIDADE) ? 9 : 6;
     if (p->direcao == 0) *ny += vel;
     else if (p->direcao == 1) *ny -= vel;
     else if (p->direcao == 2) *nx -= vel;
@@ -55,8 +56,11 @@ void iniciar_jogo(void) {
         al_load_bitmap("assets/img/Golem_1_die.png"),
         al_load_bitmap("assets/img/Golem_1_attack.png")
     };
-    if (!golem[0] || !golem[1] || !golem[2] || !golem[3]) {
-        printf("ERRO: texturas Golem nao carregadas\n");
+    if (!golem[4]) golem[4] = golem[1];
+    bool golem_ok = true;
+    for (int i = 0; i < 4; i++) if (!golem[i]) golem_ok = false;
+    if (!golem_ok) {
+        printf("erro texturas Golem nao carregadas\n");
         exit(1);
     }
 
@@ -92,7 +96,7 @@ void iniciar_jogo(void) {
 
         if (venceu || game_over) {
             if (ev.type == ALLEGRO_EVENT_KEY_DOWN) break;
-            if (ev.type == ALLEGRO_EVENT_TIMER) render_tela_fim(font, w, h, venceu);
+            if (ev.type == ALLEGRO_EVENT_TIMER) render_tela_fim(font, w, h, venceu, nivel_objetivos_concluidos());
             continue;
         }
 
@@ -100,7 +104,12 @@ void iniciar_jogo(void) {
             if (!player.atacando) {
                 player.atacando = true;
                 player.timer_ataque = 15;
+                player.slash_aplicado = false;
             }
+        } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_Q) {
+            if (mapa_id == 3) nivel_pokedex_anterior();
+        } else if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_E) {
+            if (mapa_id == 3) nivel_pokedex_proxima();
         } else if (ev.type == ALLEGRO_EVENT_TIMER) {
             redraw = true;
             ALLEGRO_KEYBOARD_STATE keys;
@@ -127,13 +136,25 @@ void iniciar_jogo(void) {
             }
             mapa_atualizar_bordas(&player, w, h, inimigos);
             mapa_tentar_entrar_casa(&player);
+            mapa_tentar_sair_casa(&player);
 
-            if (mapa_id != 3) atualizar_inimigos(inimigos, num_inimigos_atual, &player);
+            nivel_pickup_atualizar();
+            if (mapa_id == 3) {
+                nivel_carregar_pokedex();
+                nivel_pokedex_atualizar();
+            } else {
+                atualizar_inimigos(inimigos, num_inimigos_atual, &player);
+                nivel_tentar_coletar_pickup(player.x + 55, player.y + 50);
+            }
             if (nivel_atual == 5) { venceu = true; continue; }
 
             if (player.atacando) {
+                if (!player.slash_aplicado) {
+                    int hits = combate_aplicar_slash(&player, nivel_powerup(), inimigos, num_inimigos_atual);
+                    nivel_evento_slash_hit(hits);
+                    player.slash_aplicado = true;
+                }
                 player.timer_ataque--;
-                combate_aplicar_slash(&player, nivel_powerup(), inimigos, num_inimigos_atual);
                 if (player.timer_ataque <= 0) player.atacando = false;
             }
 
@@ -142,16 +163,18 @@ void iniciar_jogo(void) {
                 desenhar_mapa(tileset);
 
                 if (mapa_id == 3) {
-                    mapa_tentar_sair_casa(&player);
                     desenhar_interior(h, w);
-                    nivel_carregar_pokedex();
-                    if (nivel_pokedex_ok()) render_pokedex(font, nivel_pokedex());
+                    int pag = nivel_pokedex_pagina_atual();
+                    render_pokedex(font, pag, nivel_pokedex_total(),
+                                   nivel_pokedex_dados(pag), nivel_pokedex_sprite(pag),
+                                   nivel_pokedex_pronto(pag));
                 }
 
                 if (mapa_id == 1) render_casa(casa, false);
                 if (mapa_id != 3) {
                     desenhar_inimigos(inimigos, num_inimigos_atual,
                         golem[0], golem[1], golem[2], golem[3], golem[4]);
+                    render_pickup(font, nivel_pickup());
                 }
 
                 desenhar_personagem(player);
@@ -165,9 +188,10 @@ void iniciar_jogo(void) {
     }
 
     for (int i = 0; i < 6; i++) if (slash[i]) al_destroy_bitmap(slash[i]);
-    for (int i = 0; i < 5; i++) if (golem[i]) al_destroy_bitmap(golem[i]);
+    for (int i = 0; i < 4; i++) if (golem[i]) al_destroy_bitmap(golem[i]);
     destruir_lista_mapas();
     destruir_interior();
+    nivel_destruir();
     destruir_personagem(&player);
     al_destroy_bitmap(casa);
     al_destroy_bitmap(tileset);

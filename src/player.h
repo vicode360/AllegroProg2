@@ -11,6 +11,7 @@ typedef struct {
     ALLEGRO_BITMAP *sprites[4];
     bool atacando;
     int timer_ataque;
+    bool slash_aplicado;
 } Personagem;
 
 void inicializar_player_sprites(Personagem *p, float x, float y, const char *caminhos[4]);
