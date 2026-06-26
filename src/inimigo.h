@@ -5,32 +5,30 @@
 #include <stdbool.h>
 #include "player.h"
 
-#define NUM_INIMIGOS 2
+#define MAX_INIMIGOS 16
 
-typedef enum {
-    ESTADO_IDLE,
-    ESTADO_WALK,
-    ESTADO_HURT,
-    ESTADO_DIE,
-    ESTADO_ATTACK // NOVO ESTADO
-} EstadoInimigo;
+typedef enum { ESTADO_IDLE, ESTADO_WALK, ESTADO_HURT, ESTADO_DIE, ESTADO_ATTACK } EstadoInimigo;
 
 typedef struct {
     float x, y;
     int largura_frame, altura_frame;
     int hp;
-    bool ativo;
-    float velocidade;
+    bool ativo, is_boss;
+    float velocidade, frame_atual;
     int direcao;
-    float frame_atual;
     EstadoInimigo estado;
 } Inimigo;
 
-void inicializar_inimigos(Inimigo inimigos[], int quantidade);
-void atualizar_inimigos(Inimigo inimigos[], int quantidade, Personagem *player);
-void desenhar_inimigos(Inimigo inimigos[], int quantidade,
-                       ALLEGRO_BITMAP *sp_idle, ALLEGRO_BITMAP *sp_walk,
-                       ALLEGRO_BITMAP *sp_hurt, ALLEGRO_BITMAP *sp_die,
-                       ALLEGRO_BITMAP *sp_attack); // NOVO PARÂMETRO
+extern int kills_no_level;
+extern int num_inimigos_atual;
+extern bool game_over;
+extern bool escudo_ativo;
 
-#endif // PROG2TRABALHO_INIMIGO_H
+void spawn_inimigos_level(Inimigo inimigos[], int level);
+void atualizar_inimigos(Inimigo inimigos[], int qtd, Personagem *player);
+void desenhar_inimigos(Inimigo inimigos[], int qtd,
+                       ALLEGRO_BITMAP *idle, ALLEGRO_BITMAP *walk,
+                       ALLEGRO_BITMAP *hurt, ALLEGRO_BITMAP *die,
+                       ALLEGRO_BITMAP *attack);
+
+#endif

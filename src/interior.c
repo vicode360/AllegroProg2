@@ -96,23 +96,6 @@ void desenhar_interior(int altura_tela, int largura_tela) {
     al_draw_bitmap(bau, 225, 120, 0);
     al_draw_bitmap(livro, 310, 70, 0);
 }
-void debug_desenhar_hitboxes(int player_x, int player_y,
-                              int off_px, int off_py,
-                              int hit_pw, int hit_ph) {
-    // móveis — vermelho
-    ALLEGRO_COLOR cor_movel = al_map_rgba(255, 0, 0, 120);
-    for (int i = 0; i < num_hitboxes; i++) {
-        Hitbox h = hitbox_moveis[i];
-        al_draw_filled_rectangle(h.x, h.y, h.x + h.w, h.y + h.h, cor_movel);
-        al_draw_rectangle(h.x, h.y, h.x + h.w, h.y + h.h, al_map_rgb(255,0,0), 1);
-    }
-    // hitbox do player — azul
-    int px = player_x + off_px;
-    int py = player_y + off_py;
-    al_draw_filled_rectangle(px, py, px + hit_pw, py + hit_ph, al_map_rgba(0, 0, 255, 120));
-    al_draw_rectangle(px, py, px + hit_pw, py + hit_ph, al_map_rgb(0, 0, 255), 1);
-}
-
 bool colisao_moveis(int next_x, int next_y, int off_px, int off_py, int hit_pw, int hit_ph) {
     int px = next_x + off_px;
     int py = next_y + off_py;

@@ -1,123 +1,140 @@
 #include "inimigo.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-void inicializar_inimigos(Inimigo inimigos[], int quantidade) {
-    for (int i = 0; i < quantidade; i++) {
-        inimigos[i].x = 100.0f + (i * 250.0f);
-        inimigos[i].y = 150.0f + (i * 100.0f);
+int kills_no_level = 0;
+int num_inimigos_atual = 0;
+bool game_over = false;
+bool escudo_ativo = false;
 
+void spawn_inimigos_level(Inimigo inimigos[], int level) {
+    kills_no_level = 0;
+    for (int i = 0; i < MAX_INIMIGOS; i++) inimigos[i].ativo = false;
+
+    int qtd = 0;
+    bool boss = false;
+    switch (level) {
+        case 1: qtd = 5;  break;
+        case 2: qtd = 10; break;
+        case 3: qtd = 15; break;
+        case 4: qtd = 15; boss = true; break;
+        default: break;
+    }
+    num_inimigos_atual = qtd + (boss ? 1 : 0);
+
+    for (int i = 0; i < qtd; i++) {
+        inimigos[i].x = 50.f + (rand() % 350);
+        inimigos[i].y = 50.f + (rand() % 350);
         inimigos[i].largura_frame = 90;
         inimigos[i].altura_frame = 64;
-
         inimigos[i].hp = 30;
         inimigos[i].ativo = true;
-        inimigos[i].velocidade = 1.2f;
+        inimigos[i].velocidade = 0.4f + level * 0.1f;
         inimigos[i].direcao = 3;
-        inimigos[i].frame_atual = 0.0f;
+        inimigos[i].frame_atual = 0.f;
         inimigos[i].estado = ESTADO_IDLE;
+        inimigos[i].is_boss = false;
+    }
+
+    if (boss) {
+        Inimigo *b = &inimigos[qtd];
+        b->x = 250.f;
+        b->y = 200.f;
+        b->largura_frame = 90;
+        b->altura_frame = 64;
+        b->hp = 90;
+        b->ativo = true;
+        b->velocidade = 0.3f;
+        b->direcao = 3;
+        b->frame_atual = 0.f;
+        b->estado = ESTADO_IDLE;
+        b->is_boss = true;
     }
 }
 
-void atualizar_inimigos(Inimigo inimigos[], int quantidade, Personagem *player) {
-    for (int i = 0; i < quantidade; i++) {
+void atualizar_inimigos(Inimigo inimigos[], int qtd, Personagem *player) {
+    for (int i = 0; i < qtd; i++) {
         if (!inimigos[i].ativo) continue;
 
-        // Máquina de Estado 1: Morte
         if (inimigos[i].estado == ESTADO_DIE) {
             inimigos[i].frame_atual += 0.3f;
-            if (inimigos[i].frame_atual >= 13.0f) inimigos[i].ativo = false;
+            if (inimigos[i].frame_atual >= 13.f) {
+                inimigos[i].ativo = false;
+                kills_no_level++;
+            }
             continue;
         }
-
-        // Máquina de Estado 2: Dano
         if (inimigos[i].estado == ESTADO_HURT) {
             inimigos[i].frame_atual += 0.3f;
-            if (inimigos[i].frame_atual >= 4.0f) inimigos[i].estado = ESTADO_IDLE;
+            if (inimigos[i].frame_atual >= 4.f) inimigos[i].estado = ESTADO_IDLE;
             continue;
         }
-
-        // Máquina de Estado 3: Ataque (Prioridade sobre caminhada)
         if (inimigos[i].estado == ESTADO_ATTACK) {
             inimigos[i].frame_atual += 0.3f;
-            if (inimigos[i].frame_atual >= 11.0f) { // Golem_1_attack.png tem 11 frames
-                inimigos[i].estado = ESTADO_IDLE;   // Conclui animação
-            }
-            continue; // Entidade permanece parada enquanto ataca
+            if (inimigos[i].frame_atual >= 11.f) inimigos[i].estado = ESTADO_IDLE;
+            continue;
         }
 
         float dx = player->x - inimigos[i].x;
         float dy = player->y - inimigos[i].y;
-        float dist = sqrt(dx*dx + dy*dy);
+        float dist = sqrtf(dx * dx + dy * dy);
 
-        // Gatilho de Toque e Morte Instantânea (Hitbox de 45px de raio)
-        if (dist < 45.0f) {
+        if (dist < 45.f) {
             inimigos[i].estado = ESTADO_ATTACK;
-            inimigos[i].frame_atual = 0.0f;
-
-            // Lógica de "Morte Instantânea" (Teleporte para Respawn / Perda de Estado)
-            printf("GAME OVER: O Golem aniquilou o jogador!\n");
-            player->x = 268; // Coordenada de Respawn no Mapa 1
-            player->y = 220;
+            inimigos[i].frame_atual = 0.f;
+            if (escudo_ativo) {
+                escudo_ativo = false;
+                player->x = 100;
+                player->y = 100;
+            } else {
+                game_over = true;
+            }
             continue;
         }
 
-        // Máquina de Estado 4: Perseguição
-        if (dist > 0 && dist < 350.0f) {
+        if (dist > 0 && dist < 350.f) {
             inimigos[i].estado = ESTADO_WALK;
             inimigos[i].x += (dx / dist) * inimigos[i].velocidade;
             inimigos[i].y += (dy / dist) * inimigos[i].velocidade;
-
-            if (dx < 0) inimigos[i].direcao = 2; // Esquerda
-            else inimigos[i].direcao = 3;        // Direita
-
+            inimigos[i].direcao = (dx < 0) ? 2 : 3;
             inimigos[i].frame_atual += 0.3f;
-            if (inimigos[i].frame_atual >= 10.0f) inimigos[i].frame_atual -= 10.0f;
-
+            if (inimigos[i].frame_atual >= 10.f) inimigos[i].frame_atual -= 10.f;
         } else {
             inimigos[i].estado = ESTADO_IDLE;
             inimigos[i].frame_atual += 0.2f;
-            if (inimigos[i].frame_atual >= 8.0f) inimigos[i].frame_atual -= 8.0f;
+            if (inimigos[i].frame_atual >= 8.f) inimigos[i].frame_atual -= 8.f;
         }
     }
 }
 
-void desenhar_inimigos(Inimigo inimigos[], int quantidade,
-                       ALLEGRO_BITMAP *sp_idle, ALLEGRO_BITMAP *sp_walk,
-                       ALLEGRO_BITMAP *sp_hurt, ALLEGRO_BITMAP *sp_die,
-                       ALLEGRO_BITMAP *sp_attack) {
-
-    for (int i = 0; i < quantidade; i++) {
+void desenhar_inimigos(Inimigo inimigos[], int qtd,
+                       ALLEGRO_BITMAP *idle, ALLEGRO_BITMAP *walk,
+                       ALLEGRO_BITMAP *hurt, ALLEGRO_BITMAP *die,
+                       ALLEGRO_BITMAP *attack) {
+    for (int i = 0; i < qtd; i++) {
         if (!inimigos[i].ativo) continue;
 
-        ALLEGRO_BITMAP *sprite_atual = NULL;
-        int max_frames = 1;
-
+        ALLEGRO_BITMAP *sp = idle;
+        int max_f = 8;
         switch (inimigos[i].estado) {
-            case ESTADO_IDLE:   sprite_atual = sp_idle;   max_frames = 8;  break;
-            case ESTADO_WALK:   sprite_atual = sp_walk;   max_frames = 10; break;
-            case ESTADO_HURT:   sprite_atual = sp_hurt;   max_frames = 4;  break;
-            case ESTADO_DIE:    sprite_atual = sp_die;    max_frames = 13; break;
-            case ESTADO_ATTACK: sprite_atual = sp_attack; max_frames = 11; break; // Mapeamento
+            case ESTADO_WALK:   sp = walk;   max_f = 10; break;
+            case ESTADO_HURT:   sp = hurt;   max_f = 4;  break;
+            case ESTADO_DIE:    sp = die;    max_f = 13; break;
+            case ESTADO_ATTACK: sp = attack; max_f = 11; break;
+            default: break;
         }
+        if (!sp) continue;
 
-        if (!sprite_atual) continue;
-
-        int frame_int = (int)inimigos[i].frame_atual;
-        if (frame_int >= max_frames) frame_int = max_frames - 1;
-
-        int corte_x = frame_int * inimigos[i].largura_frame;
-        int corte_y = 0;
-
+        int f = (int)inimigos[i].frame_atual;
+        if (f >= max_f) f = max_f - 1;
+        float esc = inimigos[i].is_boss ? 2.f : 1.f;
         int flag = (inimigos[i].direcao == 2) ? ALLEGRO_FLIP_HORIZONTAL : 0;
 
-        al_draw_tinted_bitmap_region(
-            sprite_atual,
-            al_map_rgb(255, 255, 255),
-            corte_x, corte_y,
+        al_draw_tinted_scaled_rotated_bitmap_region(sp,
+            f * inimigos[i].largura_frame, 0,
             inimigos[i].largura_frame, inimigos[i].altura_frame,
-            inimigos[i].x, inimigos[i].y,
-            flag
-        );
+            al_map_rgb(255, 255, 255), 0, 0,
+            inimigos[i].x, inimigos[i].y, esc, esc, 0, flag);
     }
 }
