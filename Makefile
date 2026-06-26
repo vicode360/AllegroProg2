@@ -3,8 +3,16 @@ CC = gcc
 CFLAGS = $(shell pkg-config --cflags $(PKGS))
 LIBS   = $(shell pkg-config --libs   $(PKGS))
 
+# Windows: o pkg-config do MSYS2 gera .exe automaticamente, mas garantimos
+ifeq ($(OS),Windows_NT)
+    OUT = jogo.exe
+    EXT = .exe
+else
+    OUT = jogo
+    EXT =
+endif
+
 SRCS = $(wildcard src/*.c)
-OUT  = jogo
 
 all: $(OUT)
 $(OUT): $(SRCS)

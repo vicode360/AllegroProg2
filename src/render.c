@@ -1,7 +1,6 @@
 #include "render.h"
 #include "nivel.h"
 #include <math.h>
-#include <stdio.h>
 
 void render_tela_fim(ALLEGRO_FONT *font, int w, int h, bool vitoria, int objetivos) {
     al_clear_to_color(vitoria ? al_map_rgb(0, 0, 0) : al_map_rgb(30, 0, 0));

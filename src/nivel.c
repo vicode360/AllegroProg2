@@ -17,7 +17,7 @@ static char pokemon_hud[128];
 typedef struct {
     int id;
     PokemonData pokemon;
-    char sprite_path[64];
+    char sprite_path[256];
     ALLEGRO_BITMAP *sprite;
     ALLEGRO_THREAD *thread;
     ALLEGRO_MUTEX *mutex;
@@ -33,6 +33,16 @@ static CargaPokemon carga_pokedex[POKEDEX_TOTAL];
 static int pokedex_pagina = 0;
 static bool pokedex_iniciada = false;
 static int temp_contador = 0;
+
+static void gerar_path_temp(char *out, size_t max) {
+    ALLEGRO_PATH *p = al_get_standard_path(ALLEGRO_TEMP_PATH);
+    char nome[32];
+    snprintf(nome, sizeof(nome), "poke_%d.png", temp_contador++);
+    al_set_path_filename(p, nome);
+    const char *caminho = al_path_cstr(p, '/');
+    snprintf(out, max, "%s", caminho);
+    al_destroy_path(p);
+}
 
 typedef struct {
     ObjetivoTipo tipo;
@@ -75,7 +85,7 @@ static void carga_iniciar(CargaPokemon *c, int id, bool sprite) {
     c->sprite = NULL;
     c->quer_sprite = sprite;
     if (!c->mutex) c->mutex = al_create_mutex();
-    if (sprite) snprintf(c->sprite_path, sizeof(c->sprite_path), "/tmp/poke_%d.png", temp_contador++);
+    if (sprite) gerar_path_temp(c->sprite_path, sizeof(c->sprite_path));
     c->thread = al_create_thread(carga_worker, c);
     if (c->thread) {
         al_start_thread(c->thread);
